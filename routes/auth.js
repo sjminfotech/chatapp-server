@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const sendMail = require("../utils/sendMail");
 const User = require("../models/User");
-
+const bcrypt = require("bcrypt"); 
 const otpStore = new Map();
 
 // ✅ Send OTP
@@ -60,4 +60,53 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
+
+
+// POST /api/auth/login
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Check username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.json({ success: false, message: "Invalid username" });
+    }
+
+    // If using hashed password
+  if (password !== user.password) {
+  return res.json({ success: false, message: "Invalid password" });
+}
+
+
+    // If plain text password (not recommended):
+    // if (password !== user.password) {
+    //   return res.json({ success: false, message: "Invalid password" });
+    // }
+
+    // Success
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+router.post("/check-username", async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: "Username is required" });
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(200).json({ available: false });
+    } else {
+      return res.status(200).json({ available: true });
+    }
+  } catch (error) {
+    console.error("Error checking username:", error);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 module.exports = router;
